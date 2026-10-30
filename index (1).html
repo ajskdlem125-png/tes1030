@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>금리와 대출 이자</title>
+<!-- 글꼴: Pretendard (불러오기 실패 시 시스템 글꼴 사용) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#15181d; --muted:#535a66; --line:#d3d8df;
+    --blue:#0b5fbf;   /* 주 색상(파랑) */
+    --orange:#c75400; /* 강조 색상(주황) - 색약 친화 조합 */
+    --green:#00785e;
+    --accent-bg:#e8f0fb;
+  }
+  *{box-sizing:border-box}
+  html{font-size:20px}
+  body{margin:0;font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.6;word-break:keep-all;overflow-wrap:anywhere}
+  header{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:2px solid var(--line);
+         padding:10px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  header h1{font-size:1.6rem;margin:0}
+  .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  button{font:inherit;font-size:.9rem;padding:8px 16px;border-radius:10px;border:2px solid var(--blue);
+         background:#fff;color:var(--blue);cursor:pointer;font-weight:700}
+  button.primary{background:var(--blue);color:#fff}
+  button:disabled{opacity:.35;cursor:default}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+  .dots{display:flex;gap:6px}
+  .dot{width:40px;height:40px;border-radius:50%;padding:0;border-color:var(--line);color:var(--muted)}
+  .dot.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  main{max-width:1320px;margin:0 auto;padding:24px}
+  .step{display:none}
+  .step.active{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h2{font-size:1.6rem;margin:0 0 6px}
+  h3{font-size:1.1rem;margin:0 0 10px}
+  .lead{color:var(--muted);margin:0 0 18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 24px;margin-bottom:20px}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px;align-items:start}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  .formula{font-size:1.2rem;background:var(--accent-bg);border-radius:12px;padding:14px 18px;text-align:center;font-weight:800;margin:12px 0}
+  .formula small{display:block;font-size:.8rem;font-weight:500;color:var(--muted)}
+  .tag{display:inline-block;font-size:.7rem;padding:1px 8px;border-radius:6px;background:#fff1e3;color:#7a3300;
+       border:1px solid #eebd8c;margin-left:6px;vertical-align:middle;font-weight:700}
+  dl{margin:0} dt{font-weight:800;margin-top:10px} dd{margin:0 0 4px 0;color:var(--muted)}
+  label.ctrl{display:block;margin:14px 0 2px;font-weight:800}
+  .ctrl-row{display:flex;align-items:center;gap:12px}
+  input[type=range]{flex:1;min-width:0;height:34px;accent-color:var(--blue)}
+  .val{min-width:6.5em;text-align:right;font-weight:800;font-size:1.1rem;color:var(--blue)}
+  .result{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+  .box{border:2px solid var(--line);border-radius:12px;padding:10px 14px;background:#fff}
+  .box .k{font-size:.78rem;color:var(--muted)}
+  .box .v{font-size:1.3rem;font-weight:800}
+  .box.hl{border-color:var(--orange);border-width:3px}
+  .box.hl .v{color:var(--orange)}
+  .seg{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .seg button[aria-pressed="true"]{background:var(--blue);color:#fff}
+  svg{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.85rem;margin-top:6px;color:var(--muted)}
+  .note{font-size:.8rem;color:var(--muted);margin-top:8px}
+  .callout{background:#fff7ef;border-left:6px solid var(--orange);border-radius:10px;padding:10px 16px;margin-top:14px;font-weight:600}
+  .q{border-left:8px solid var(--green)}
+  .q .ask{font-weight:800;font-size:1.1rem}
+  .ans{display:none;margin-top:12px;background:#e7f5f1;border-radius:10px;padding:12px 16px}
+  .ans.show{display:block}
+  table{border-collapse:collapse;width:100%;font-size:.9rem}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
+  th{background:var(--accent-bg)}
+  tr.now td{background:#fff1e3;font-weight:800}
+  .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:center;margin-top:16px}
+  .flow .fbox{border:3px solid var(--blue);border-radius:14px;padding:14px;text-align:center;font-weight:700;background:#fff;min-height:110px;display:flex;flex-direction:column;justify-content:center}
+  .flow .fbox b{font-size:1.25rem;display:block}
+  .flow .arrow{font-size:1.6rem;font-weight:800;color:var(--muted)}
+  .up{color:var(--orange)} .down{color:var(--blue)}
+  .ex{background:var(--accent-bg);border-radius:12px;padding:12px 16px;margin-top:10px}
+  footer{max-width:1320px;margin:0 auto;padding:4px 24px 32px;color:var(--muted);font-size:.75rem}
+  @media (max-width:960px){
+    html{font-size:17px}
+    .grid,.grid2{grid-template-columns:1fr}
+    .flow{grid-template-columns:1fr}
+    .flow .arrow{transform:rotate(90deg);text-align:center}
+  }
+  @media (max-width:480px){
+    html{font-size:16px}
+    main{padding:12px} header{padding:8px 12px} .card{padding:14px}
+    .result{grid-template-columns:1fr}
+    .val{min-width:5.5em}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="pageTitle">금리와 대출 이자</h1>
+  <nav class="nav" aria-label="단계 이동">
+    <button id="prevBtn" aria-label="이전 단계">◀ 이전</button>
+    <div class="dots" id="dots"></div>
+    <button id="nextBtn" class="primary" aria-label="다음 단계">다음 ▶</button>
+    <button id="fsBtn" aria-label="전체화면">⛶ 전체화면</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===== 1단계: 금리의 의미 ===== -->
+  <section class="step" data-title="금리란?">
+    <h2>① 금리(이자율)란 무엇일까?</h2>
+    <p class="lead">돈을 빌려 쓴 대가가 <b>이자</b>이고, 원금에 대한 이자의 비율이 <b>금리(이자율)</b>입니다.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>핵심 용어</h3>
+        <dl>
+          <dt>원금</dt><dd>처음에 빌리거나 맡긴 돈</dd>
+          <dt>이자</dt><dd>돈을 빌려 쓴 대가로 내는(받는) 돈</dd>
+          <dt>금리(이자율)</dt><dd>원금에 대한 이자의 비율, 보통 ‘연 ○%’로 나타냄</dd>
+        </dl>
+        <div class="formula">이자 = 원금 × 금리 × 기간<small>(기간은 ‘년’ 단위, 금리는 소수로 바꿔 계산 예: 5% → 0.05)</small></div>
+      </div>
+      <div class="card">
+        <h3>예시로 계산해 보기 <span class="tag">가상 사례</span></h3>
+        <div class="ex" id="basicExample"></div>
+        <div class="grid2" style="margin-top:14px">
+          <div class="box"><div class="k">돈을 <b>빌리는</b> 사람에게 이자는</div><div class="v down">비용 ▼</div></div>
+          <div class="box"><div class="k">돈을 <b>맡기는(예금하는)</b> 사람에게 이자는</div><div class="v up">수익 ▲</div></div>
+        </div>
+        <div class="callout">그래서 금리는 ‘돈을 빌려 쓰는 데 드는 가격’, 즉 <b>돈의 가격</b>이라고도 합니다.</div>
+      </div>
+    </div>
+    <div class="card q">
+      <div class="ask">🤔 발문: 금리가 오르면 ‘돈을 빌린 사람’과 ‘예금한 사람’ 중 누가 더 유리해질까?</div>
+      <button class="ansBtn" aria-expanded="false" style="margin-top:10px">정답·해설 보기</button>
+      <div class="ans" id="ans1"></div>
+    </div>
+  </section>
+
+  <!-- ===== 2단계: 단리와 복리 ===== -->
+  <section class="step" data-title="단리와 복리">
+    <h2>② 단리와 복리</h2>
+    <p class="lead"><b>단리</b>는 원금에만 이자가 붙고, <b>복리</b>는 ‘원금 + 이자’에 다시 이자가 붙습니다.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="formula" style="font-size:1rem">단리 원리금 = 원금 × (1 + 금리 × 기간)<br>복리 원리금 = 원금 × (1 + 금리)<sup>기간</sup></div>
+        <label class="ctrl" for="cRate">연 금리</label>
+        <div class="ctrl-row"><input type="range" id="cRate"><span class="val" id="cRateV"></span></div>
+        <label class="ctrl" for="cYears">기간</label>
+        <div class="ctrl-row"><input type="range" id="cYears"><span class="val" id="cYearsV"></span></div>
+        <div class="result">
+          <div class="box"><div class="k">단리 원리금 (점선)</div><div class="v" id="cSimple"></div></div>
+          <div class="box"><div class="k">복리 원리금 (실선)</div><div class="v" id="cComp"></div></div>
+          <div class="box hl"><div class="k">복리 − 단리 차이</div><div class="v" id="cDiff"></div></div>
+          <div class="box"><div class="k">복리로 2배 되는 데 걸리는 시간 <span class="tag">심화: 72의 법칙</span></div><div class="v" id="c72"></div></div>
+        </div>
+        <p class="note" id="cNote"></p>
+      </div>
+      <div class="card">
+        <h3>기간에 따른 원리금 변화</h3>
+        <svg id="compChart" role="img" aria-label="단리와 복리의 원리금 비교 그래프"></svg>
+        <div class="legend"><span>━━ 복리(실선, 주황)</span><span>┅┅ 단리(점선, 파랑)</span><span>연 1회 이자 계산 가정</span></div>
+      </div>
+    </div>
+    <div class="card q">
+      <div class="ask">🤔 발문: 금리가 같아도 기간이 길어질수록 단리와 복리의 차이가 점점 커지는 까닭은?</div>
+      <button class="ansBtn" aria-expanded="false" style="margin-top:10px">정답·해설 보기</button>
+      <div class="ans" id="ans2"></div>
+    </div>
+  </section>
+
+  <!-- ===== 3단계: 대출 이자 계산기 ===== -->
+  <section class="step" data-title="대출 이자 계산기">
+    <h2>③ 대출 이자 계산기 — 금리가 바뀌면 갚을 돈은?</h2>
+    <p class="lead">슬라이더로 <b>금리</b>를 움직여 보세요. 원금과 기간이 같을 때, 금리에 따라 이자가 얼마나 달라질까요?</p>
+    <div class="grid">
+      <div class="card">
+        <label class="ctrl" for="lPrin">대출 원금</label>
+        <div class="ctrl-row"><input type="range" id="lPrin"><span class="val" id="lPrinV"></span></div>
+        <label class="ctrl" for="lRate">연 금리</label>
+        <div class="ctrl-row"><input type="range" id="lRate"><span class="val" id="lRateV"></span></div>
+        <label class="ctrl" for="lYears">대출 기간</label>
+        <div class="ctrl-row"><input type="range" id="lYears"><span class="val" id="lYearsV"></span></div>
+        <div class="ctrl" style="margin-top:14px">상환 방식</div>
+        <div class="seg" role="group" aria-label="상환 방식">
+          <button data-method="bullet" aria-pressed="true">만기일시상환</button>
+          <button data-method="amort" aria-pressed="false">원리금균등상환 <span class="tag">심화</span></button>
+        </div>
+        <p class="note" id="methodNote"></p>
+        <div class="result">
+          <div class="box"><div class="k" id="lMonthlyK">매월 내는 돈</div><div class="v" id="lMonthly"></div></div>
+          <div class="box hl"><div class="k">총 이자</div><div class="v" id="lInterest"></div></div>
+          <div class="box"><div class="k">총 갚을 돈 (원금 + 이자)</div><div class="v" id="lTotal"></div></div>
+          <div class="box"><div class="k">원금 대비 이자</div><div class="v" id="lRatio"></div></div>
+        </div>
+        <div class="callout" id="lPlusOne"></div>
+      </div>
+      <div class="card">
+        <h3>금리에 따른 총 이자</h3>
+        <svg id="loanChart" role="img" aria-label="금리에 따른 총 이자 그래프"></svg>
+        <div class="legend"><span>● 주황 점: 현재 선택한 금리</span><span>━━ 선택한 상환 방식(실선)</span><span>┅┅ 다른 상환 방식(점선)</span></div>
+        <p class="note">※ 원금·기간 등 다른 조건이 일정하다면, 금리가 높을수록 총 이자는 늘어납니다.</p>
+        <h3 style="margin-top:14px">금리별 비교표</h3>
+        <table>
+          <thead><tr><th>연 금리</th><th id="tMonthlyH">매월 내는 돈</th><th>총 이자</th><th>총 갚을 돈</th></tr></thead>
+          <tbody id="cmpBody"></tbody>
+        </table>
+        <p class="note">※ 실제 대출은 수수료, 중도상환, 금리 변동 등에 따라 달라질 수 있으며, 이 계산기는 원 단위에서 반올림한 학습용 계산입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 4단계: 금리 변동과 경제 ===== -->
+  <section class="step" data-title="금리 변동의 영향">
+    <h2>④ 금리가 오르고 내리면? <span class="tag">심화</span></h2>
+    <p class="lead">버튼을 눌러 금리가 오를 때와 내릴 때 가계의 선택이 어떻게 달라지는지 비교해 보세요. (다른 조건이 일정하다면)</p>
+    <div class="card">
+      <div class="seg" role="group" aria-label="금리 변화 방향">
+        <button data-dir="up" aria-pressed="true">금리 ▲ 상승</button>
+        <button data-dir="down" aria-pressed="false">금리 ▼ 하락</button>
+      </div>
+      <div class="flow" id="flow"></div>
+    </div>
+    <div class="card q">
+      <div class="ask" id="q4"></div>
+      <button class="ansBtn" aria-expanded="false" style="margin-top:10px">정답·해설 보기</button>
+      <div class="ans" id="ans4"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer id="source"></footer>
+
+<script>
+/* =========================================================
+   CONFIG : 수업에 맞게 이 부분의 숫자·문구만 고치면 됩니다.
+   (금액 단위: 원, 금리 단위: %)
+   ========================================================= */
+const CONFIG = {
+  title: "금리와 대출 이자",
+  source: "○○출판사 『통합사회』 ○쪽의 개념을 참고하여 재구성 · 모든 예시 인물과 수치는 가상입니다.",
+
+  // 1단계 예시
+  basic: { name: "민수", principal: 1000000, rate: 5, years: 1 },
+
+  // 2단계 단리·복리
+  compound: { principal: 1000000, rate: 5, rateMin: 1, rateMax: 15, rateStep: 0.5,
+              years: 10, yearsMin: 1, yearsMax: 30 },
+
+  // 3단계 대출 계산기
+  loan: { principal: 10000000, principalMin: 1000000, principalMax: 50000000, principalStep: 1000000,
+          rate: 5, rateMin: 0.5, rateMax: 15, rateStep: 0.1,
+          years: 3, yearsMin: 1, yearsMax: 10,
+          compareRates: [3, 5, 7, 10] },   // 비교표에 넣을 금리
+
+  // 발문과 해설
+  answers: {
+    ans1: "<b>예금한 사람</b>이 유리해집니다. 예금자는 받을 이자가 늘어나지만, 돈을 빌린 사람은 갚아야 할 이자가 늘어납니다. (단, 대출 금리가 처음부터 고정된 ‘고정 금리’ 대출이라면 기존 대출 이자는 그대로입니다.)",
+    ans2: "복리는 <b>이자에도 다시 이자가 붙기</b> 때문입니다. 해마다 이자를 계산하는 기준 금액(원금 + 그동안의 이자)이 커지므로, 늘어나는 금액 자체가 해마다 커집니다. 반면 단리는 매년 같은 금액만큼만 늘어납니다. 그래서 저축은 오래 할수록, 빚은 오래 둘수록 복리의 효과가 커집니다.",
+    q4: "📝 확인 문제: 대출 원금 1,000만 원, 기간 2년, 만기일시상환일 때 금리가 연 4%에서 연 6%로 오르면 총 이자는 얼마나 늘어날까?",
+    ans4: "연 4%일 때 총 이자 = 1,000만 × 0.04 × 2 = <b>80만 원</b>, 연 6%일 때 = 1,000만 × 0.06 × 2 = <b>120만 원</b>.<br>따라서 총 이자는 <b>40만 원</b> 늘어납니다. 금리는 2%p(퍼센트포인트) 올랐지만, 이자는 80만 원 → 120만 원으로 <b>50%</b> 늘었다는 점에 주의하세요. <span class='tag'>심화: %와 %p 구분</span>"
+  },
+
+  // 4단계 흐름도 문구
+  flow: {
+    up: [
+      ["대출 이자 부담", "▲ 증가", "돈을 빌리기 부담스러워짐"],
+      ["예금 이자 수익", "▲ 증가", "저축할 마음이 커짐"],
+      ["소비·투자", "▼ 감소하는 경향", "경기가 식는 방향"]
+    ],
+    down: [
+      ["대출 이자 부담", "▼ 감소", "돈을 빌리기 쉬워짐"],
+      ["예금 이자 수익", "▼ 감소", "저축할 마음이 줄어듦"],
+      ["소비·투자", "▲ 증가하는 경향", "경기가 살아나는 방향"]
+    ]
+  }
+};
+
+/* ---------- 공통 도구 ---------- */
+const $ = id => document.getElementById(id);
+const won = v => Math.round(v).toLocaleString("ko-KR") + "원";
+const manwon = v => {               // 큰 금액을 '만 원' 단위로 보기 좋게
+  const m = v / 10000;
+  return (Math.round(m * 10) / 10).toLocaleString("ko-KR") + "만 원";
+};
+const pct = v => (Math.round(v * 10) / 10).toFixed(1) + "%";
+
+function setupRange(id, min, max, step, value){
+  const el = $(id); el.min = min; el.max = max; el.step = step; el.value = value; return el;
+}
+
+/* ---------- SVG 선 그래프 그리기 ---------- */
+function niceScale(max){
+  if(max <= 0) return { top: 1, step: 0.2 };
+  const raw = max / 5, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+  const s = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+  return { top: Math.ceil(max / s) * s, step: s };
+}
+function drawChart(svg, o){
+  const W = 800, H = 470, L = 96, R = 150, T = 30, B = 72;
+  const pw = W - L - R, ph = H - T - B;
+  const { top, step } = niceScale(o.yMax);
+  const X = x => L + (x - o.xMin) / (o.xMax - o.xMin) * pw;
+  const Y = y => T + ph - (y / top) * ph;
+  let s = "";
+  // 가로 눈금선과 y축 값
+  for(let v = 0; v <= top + 1e-9; v += step){
+    s += `<line x1="${L}" x2="${L+pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e2e6eb"/>`;
+    s += `<text x="${L-10}" y="${Y(v)+6}" text-anchor="end" font-size="18" fill="#535a66">${o.yFmt(v)}</text>`;
+  }
+  // x축 눈금
+  o.xTicks.forEach(x => {
+    s += `<line x1="${X(x)}" x2="${X(x)}" y1="${T+ph}" y2="${T+ph+7}" stroke="#15181d" stroke-width="2"/>`;
+    s += `<text x="${X(x)}" y="${T+ph+30}" text-anchor="middle" font-size="18" fill="#535a66">${o.xFmt(x)}</text>`;
+  });
+  // 축
+  s += `<line x1="${L}" y1="${T-10}" x2="${L}" y2="${T+ph}" stroke="#15181d" stroke-width="2.5"/>`;
+  s += `<line x1="${L}" y1="${T+ph}" x2="${L+pw+10}" y2="${T+ph}" stroke="#15181d" stroke-width="2.5"/>`;
+  s += `<text x="${L+pw/2}" y="${H-8}" text-anchor="middle" font-size="20" font-weight="700" fill="#15181d">${o.xLabel}</text>`;
+  s += `<text transform="translate(24 ${T+ph/2}) rotate(-90)" text-anchor="middle" font-size="20" font-weight="700" fill="#15181d">${o.yLabel}</text>`;
+  // 선
+  o.series.forEach(se => {
+    const d = se.pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
+    s += `<path d="${d}" fill="none" stroke="${se.color}" stroke-width="${se.width || 4}" ${se.dash ? `stroke-dasharray="${se.dash}"` : ""} stroke-linejoin="round" stroke-linecap="round" opacity="${se.opacity || 1}"/>`;
+    const last = se.pts[se.pts.length - 1];
+    let ly = Y(last[1]) + (se.dy || 0);
+    ly = Math.max(T + 12, Math.min(T + ph - 4, ly));
+    s += `<text x="${X(last[0]) + 10}" y="${ly + 6}" font-size="18" font-weight="800" fill="${se.color}">${se.label}</text>`;
+  });
+  // 현재 위치 표시
+  if(o.marker){
+    const m = o.marker, mx = X(m.x), my = Y(m.y);
+    s += `<line x1="${mx}" x2="${mx}" y1="${my}" y2="${T+ph}" stroke="#c75400" stroke-dasharray="6 5" stroke-width="2"/>`;
+    s += `<circle cx="${mx}" cy="${my}" r="10" fill="#c75400" stroke="#fff" stroke-width="3"/>`;
+    const right = mx > L + pw * 0.55;
+    const ty = Math.max(T + 8, my - 18);
+    s += `<text x="${right ? mx - 16 : mx + 16}" y="${ty}" text-anchor="${right ? "end" : "start"}" font-size="19" font-weight="800" fill="#c75400" paint-order="stroke" stroke="#fff" stroke-width="6">${m.text}</text>`;
+  }
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = s;
+}
+
+/* ---------- 1단계 ---------- */
+(function(){
+  const b = CONFIG.basic, interest = b.principal * b.rate / 100 * b.years;
+  $("basicExample").innerHTML =
+    `${b.name}가 은행에서 <b>${manwon(b.principal)}</b>을 <b>연 ${b.rate}%</b>로 <b>${b.years}년</b> 빌리면<br>` +
+    `이자 = ${b.principal.toLocaleString("ko-KR")} × ${b.rate / 100} × ${b.years} = <b class="up">${won(interest)}</b><br>` +
+    `→ ${b.years}년 뒤 갚을 돈: 원금 + 이자 = <b>${won(b.principal + interest)}</b>`;
+  $("ans1").innerHTML = CONFIG.answers.ans1;
+  $("ans2").innerHTML = CONFIG.answers.ans2;
+  $("q4").innerHTML = CONFIG.answers.q4;
+  $("ans4").innerHTML = CONFIG.answers.ans4;
+})();
+
+/* ---------- 2단계: 단리·복리 ---------- */
+const C = CONFIG.compound;
+const cRate = setupRange("cRate", C.rateMin, C.rateMax, C.rateStep, C.rate);
+const cYears = setupRange("cYears", C.yearsMin, C.yearsMax, 1, C.years);
+function updateCompound(){
+  const r = +cRate.value / 100, n = +cYears.value, P = C.principal;
+  $("cRateV").textContent = pct(+cRate.value);
+  $("cYearsV").textContent = n + "년";
+  const simple = P * (1 + r * n), comp = P * Math.pow(1 + r, n);
+  $("cSimple").textContent = won(simple);
+  $("cComp").textContent = won(comp);
+  $("cDiff").textContent = won(comp - simple);
+  const rule72 = 72 / (+cRate.value), exact = Math.log(2) / Math.log(1 + r);
+  $("c72").textContent = "약 " + (Math.round(rule72 * 10) / 10) + "년";
+  $("cNote").textContent = `원금 ${manwon(P)} 기준 · 72 ÷ 금리 로 어림한 값 (정확한 계산: 약 ${(Math.round(exact * 10) / 10)}년)`;
+  const sPts = [], cPts = [];
+  for(let t = 0; t <= n; t++){ sPts.push([t, P * (1 + r * t)]); cPts.push([t, P * Math.pow(1 + r, t)]); }
+  const tickStep = n <= 10 ? 1 : n <= 20 ? 2 : 5, ticks = [];
+  for(let t = 0; t <= n; t += tickStep) ticks.push(t);
+  drawChart($("compChart"), {
+    xMin: 0, xMax: n, yMax: comp, xTicks: ticks, xFmt: t => t,
+    yFmt: v => (Math.round(v / 10000 * 10) / 10).toLocaleString("ko-KR"),
+    xLabel: "기간(년)", yLabel: "원리금(만 원)",
+    series: [
+      { pts: sPts, color: "#0b5fbf", dash: "10 8", label: "단리", dy: 14 },
+      { pts: cPts, color: "#c75400", width: 5, label: "복리", dy: -10 }
+    ]
+  });
+}
+[cRate, cYears].forEach(el => el.addEventListener("input", updateCompound));
+
+/* ---------- 3단계: 대출 계산기 ---------- */
+const LC = CONFIG.loan;
+let method = "bullet";
+const lPrin = setupRange("lPrin", LC.principalMin, LC.principalMax, LC.principalStep, LC.principal);
+const lRate = setupRange("lRate", LC.rateMin, LC.rateMax, LC.rateStep, LC.rate);
+const lYears = setupRange("lYears", LC.yearsMin, LC.yearsMax, 1, LC.years);
+
+// 대출 계산: 만기일시상환(매월 이자만, 만기에 원금) / 원리금균등상환(매월 같은 금액)
+function loanCalc(P, ratePct, years, m){
+  const n = years * 12, i = ratePct / 100 / 12;
+  if(m === "bullet"){
+    const mi = P * i;
+    return { monthly: mi, interest: mi * n, total: P + mi * n };
+  }
+  const M = i === 0 ? P / n : P * i * Math.pow(1 + i, n) / (Math.pow(1 + i, n) - 1);
+  return { monthly: M, interest: M * n - P, total: M * n };
+}
+
+function updateLoan(){
+  const P = +lPrin.value, r = +lRate.value, y = +lYears.value;
+  $("lPrinV").textContent = manwon(P);
+  $("lRateV").textContent = pct(r);
+  $("lYearsV").textContent = y + "년";
+  const res = loanCalc(P, r, y, method);
+  if(method === "bullet"){
+    $("lMonthlyK").textContent = "매월 내는 이자 (만기에 원금 한꺼번에)";
+    $("methodNote").textContent = "만기일시상환: 매달 이자만 내고, 대출 기간이 끝날 때 원금을 한꺼번에 갚는 방식";
+    $("tMonthlyH").textContent = "매월 내는 이자";
+  } else {
+    $("lMonthlyK").textContent = "매월 내는 돈 (원금 + 이자)";
+    $("methodNote").textContent = "원리금균등상환: 매달 같은 금액(원금 일부 + 이자)을 나눠 갚는 방식. 원금이 줄어드는 만큼 이자도 줄어듦";
+    $("tMonthlyH").textContent = "매월 내는 돈";
+  }
+  $("lMonthly").textContent = won(res.monthly);
+  $("lInterest").textContent = won(res.interest);
+  $("lTotal").textContent = won(res.total);
+  $("lRatio").textContent = pct(res.interest / P * 100);
+
+  const plus = loanCalc(P, r + 1, y, method);
+  $("lPlusOne").innerHTML = `금리가 <b>1%p</b> 오르면(연 ${pct(r)} → ${pct(r + 1)}) 총 이자가 <b class="up">${won(plus.interest - res.interest)}</b> 늘어납니다.`;
+
+  // 그래프: 금리(가로) - 총 이자(세로)
+  const other = method === "bullet" ? "amort" : "bullet";
+  const pts = { bullet: [], amort: [] };
+  for(let x = 0; x <= LC.rateMax + 1e-9; x += 0.25){
+    pts.bullet.push([x, loanCalc(P, x, y, "bullet").interest]);
+    pts.amort.push([x, loanCalc(P, x, y, "amort").interest]);
+  }
+  const names = { bullet: "만기일시", amort: "원리금균등" };
+  const ticks = []; for(let t = 0; t <= LC.rateMax; t += 3) ticks.push(t);
+  drawChart($("loanChart"), {
+    xMin: 0, xMax: LC.rateMax, yMax: loanCalc(P, LC.rateMax, y, "bullet").interest,
+    xTicks: ticks, xFmt: t => t + "%",
+    yFmt: v => (Math.round(v / 10000 * 10) / 10).toLocaleString("ko-KR"),
+    xLabel: "연 금리(%)", yLabel: "총 이자(만 원)",
+    series: [
+      { pts: pts[other], color: "#535a66", dash: "8 7", width: 3, opacity: .75, label: names[other], dy: other === "bullet" ? -8 : 10 },
+      { pts: pts[method], color: "#0b5fbf", width: 5, label: names[method], dy: method === "bullet" ? -8 : 10 }
+    ],
+    marker: { x: r, y: res.interest, text: `연 ${pct(r)} → 총 이자 ${manwon(res.interest)}` }
+  });
+
+  // 비교표
+  const rates = [...new Set([...LC.compareRates, Math.round(r * 10) / 10])].sort((a, b) => a - b);
+  $("cmpBody").innerHTML = rates.map(rt => {
+    const c = loanCalc(P, rt, y, method), now = Math.abs(rt - r) < 1e-9;
+    return `<tr class="${now ? "now" : ""}"><td>${now ? "▶ " : ""}${pct(rt)}</td><td>${won(c.monthly)}</td><td>${won(c.interest)}</td><td>${won(c.total)}</td></tr>`;
+  }).join("");
+}
+[lPrin, lRate, lYears].forEach(el => el.addEventListener("input", updateLoan));
+document.querySelectorAll("[data-method]").forEach(btn => btn.addEventListener("click", () => {
+  method = btn.dataset.method;
+  document.querySelectorAll("[data-method]").forEach(b => b.setAttribute("aria-pressed", b === btn));
+  updateLoan();
+}));
+
+/* ---------- 4단계: 금리 변동 흐름도 ---------- */
+function updateFlow(dir){
+  const items = CONFIG.flow[dir];
+  const cls = t => t.includes("▲") ? "up" : "down";
+  const head = dir === "up" ? `<span class="up">금리 ▲</span>` : `<span class="down">금리 ▼</span>`;
+  $("flow").innerHTML = items.map((it, i) =>
+    (i ? `<div class="arrow" aria-hidden="true">➜</div>` : "") +
+    `<div class="fbox">${i === 0 ? head + "<br>" : ""}<b>${it[0]}</b><span class="${cls(it[1])}" style="font-size:1.15rem;font-weight:800">${it[1]}</span><span style="color:var(--muted);font-weight:500;font-size:.85rem">${it[2]}</span></div>`
+  ).join("");
+}
+document.querySelectorAll("[data-dir]").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll("[data-dir]").forEach(b => b.setAttribute("aria-pressed", b === btn));
+  updateFlow(btn.dataset.dir);
+}));
+
+/* ---------- 정답 보기 버튼 ---------- */
+document.querySelectorAll(".ansBtn").forEach(btn => btn.addEventListener("click", () => {
+  const ans = btn.nextElementSibling, open = ans.classList.toggle("show");
+  btn.setAttribute("aria-expanded", open);
+  btn.textContent = open ? "해설 숨기기" : "정답·해설 보기";
+}));
+
+/* ---------- 단계 이동 (버튼, ←/→ 키) ---------- */
+const steps = [...document.querySelectorAll(".step")];
+let cur = 0;
+steps.forEach((s, i) => {
+  const d = document.createElement("button");
+  d.className = "dot"; d.textContent = i + 1;
+  d.title = s.dataset.title; d.setAttribute("aria-label", `${i + 1}단계: ${s.dataset.title}`);
+  d.addEventListener("click", () => go(i));
+  $("dots").appendChild(d);
+});
+function go(i){
+  cur = Math.max(0, Math.min(steps.length - 1, i));
+  steps.forEach((s, k) => s.classList.toggle("active", k === cur));
+  [...$("dots").children].forEach((d, k) => d.classList.toggle("on", k === cur));
+  $("prevBtn").disabled = cur === 0;
+  $("nextBtn").disabled = cur === steps.length - 1;
+  window.scrollTo({ top: 0 });
+}
+$("prevBtn").addEventListener("click", () => go(cur - 1));
+$("nextBtn").addEventListener("click", () => go(cur + 1));
+document.addEventListener("keydown", e => {
+  if(e.target.tagName === "INPUT") return;   // 슬라이더 조작 중에는 단계 이동 안 함
+  if(e.key === "ArrowRight") go(cur + 1);
+  if(e.key === "ArrowLeft") go(cur - 1);
+});
+$("fsBtn").addEventListener("click", () => {
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+  else document.exitFullscreen && document.exitFullscreen();
+});
+
+/* ---------- 시작 ---------- */
+document.title = CONFIG.title;
+$("pageTitle").textContent = CONFIG.title;
+$("source").textContent = "출처: " + CONFIG.source;
+updateCompound(); updateLoan(); updateFlow("up"); go(0);
+</script>
+</body>
+</html>
